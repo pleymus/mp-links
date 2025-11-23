@@ -85,9 +85,46 @@ function initForm() {
 function handleSubmit(nameInput, emailInput, phoneInputElement, button, form) {
     console.log('🔄 Processando envio...');
     
-    const name = nameInput.value.trim();
-    const email = emailInput.value.trim();
-    const phone = phoneInputElement.value.trim();
+    // SEGURANÇA: Verifica rate limiting
+    if (typeof SecurityLayer !== 'undefined') {
+        const rateLimitCheck = SecurityLayer.checkRateLimit();
+        if (!rateLimitCheck.allowed) {
+            showMessage(rateLimitCheck.message, 'error', form);
+            return;
+        }
+        
+        // SEGURANÇA: Valida honeypot
+        if (!SecurityLayer.validateHoneypot()) {
+            console.warn('🚨 Tentativa de bot bloqueada');
+            showMessage('Erro ao enviar. Tente novamente.', 'error', form);
+            return;
+        }
+        
+        // SEGURANÇA: Detecta comportamento de bot
+        if (!SecurityLayer.detectBotBehavior()) {
+            console.warn('🚨 Comportamento suspeito detectado');
+            showMessage('Por favor, preencha o formulário com calma.', 'error', form);
+            return;
+        }
+        
+        // SEGURANÇA: Valida origem
+        if (!SecurityLayer.validateOrigin()) {
+            console.warn('🚨 Origem não autorizada');
+            showMessage('Erro ao enviar. Origem não autorizada.', 'error', form);
+            return;
+        }
+    }
+    
+    let name = nameInput.value.trim();
+    let email = emailInput.value.trim();
+    let phone = phoneInputElement.value.trim();
+    
+    // SEGURANÇA: Sanitiza inputs
+    if (typeof SecurityLayer !== 'undefined') {
+        name = SecurityLayer.sanitizeInput(name);
+        email = SecurityLayer.sanitizeInput(email);
+        phone = SecurityLayer.sanitizeInput(phone);
+    }
     
     // Validação do nome
     if (!name || name.length < 3) {
@@ -110,6 +147,11 @@ function handleSubmit(nameInput, emailInput, phoneInputElement, button, form) {
     if (iti && !iti.isValidNumber()) {
         showMessage('Por favor, insira um telefone válido', 'error', form);
         return;
+    }
+    
+    // SEGURANÇA: Registra tentativa
+    if (typeof SecurityLayer !== 'undefined') {
+        SecurityLayer.recordAttempt();
     }
     
     const fullPhone = iti ? iti.getNumber() : phone;
@@ -148,11 +190,19 @@ function handleSubmit(nameInput, emailInput, phoneInputElement, button, form) {
     formData.append('source', CONFIG.additionalData?.source || 'pleymus');
     formData.append('campaign', CONFIG.additionalData?.campaign || 'default');
     
+    // SEGURANÇA: Adiciona headers de segurança
+    const securityHeaders = typeof SecurityLayer !== 'undefined' 
+        ? SecurityLayer.getSecurityHeaders() 
+        : {};
+    
     // Envia
     fetch(CONFIG.webhookURL, {
         method: 'POST',
         body: formData,
-        headers: { 'Accept': 'application/json' },
+        headers: {
+            'Accept': 'application/json',
+            ...securityHeaders
+        },
         mode: 'cors'
     })
     .then(function(response) {
