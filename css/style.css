@@ -297,26 +297,43 @@ body {
     border: 1px solid #f5c6cb;
 }
 
-/* Form Messages */
-.form-message {
-    margin-top: 15px;
-    padding: 12px 20px;
+/* International Phone Input */
+.iti {
+    width: 100% !important;
+    display: block !important;
+}
+
+.iti__flag-container {
+    padding: 0;
+}
+
+.iti__selected-flag {
+    padding: 0 8px 0 12px;
+}
+
+.iti__country-list {
+    max-height: 200px;
     border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    transition: opacity 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.form-message-success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
+/* Garante que o input de telefone tenha o mesmo width do nome */
+.iti input,
+.iti input[type="tel"] {
+    width: 100% !important;
+    padding: 14px 20px !important;
+    padding-left: 52px !important;
+    border: 2px solid #E5E5E5 !important;
+    border-radius: 8px !important;
+    font-size: 15px !important;
+    font-family: 'Inter', sans-serif !important;
+    transition: border-color 0.2s !important;
 }
 
-.form-message-error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
+.iti input:focus,
+.iti input[type="tel"]:focus {
+    outline: none !important;
+    border-color: #181A20 !important;
 }
 
 /* Footer */
