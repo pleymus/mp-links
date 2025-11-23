@@ -1,4 +1,4 @@
-// Form Handler - Nome e Telefone com máscara internacional
+// Form Handler - Nome, Email e Telefone
 console.log('📧 Form.js carregado');
 
 let phoneInput;
@@ -16,26 +16,12 @@ function initForm() {
     
     const form = document.getElementById('pleymusForm');
     const nameInput = document.getElementById('nameInput');
+    const emailInput = document.getElementById('emailInput');
     const phoneInputElement = document.getElementById('phoneInput');
     const button = document.getElementById('submitButton');
     
-    if (!form) {
-        console.error('❌ Formulário não encontrado');
-        return;
-    }
-    
-    if (!nameInput) {
-        console.error('❌ Input de nome não encontrado');
-        return;
-    }
-    
-    if (!phoneInputElement) {
-        console.error('❌ Input de telefone não encontrado');
-        return;
-    }
-    
-    if (!button) {
-        console.error('❌ Botão não encontrado');
+    if (!form || !nameInput || !emailInput || !phoneInputElement || !button) {
+        console.error('❌ Elementos do formulário não encontrados');
         return;
     }
     
@@ -53,8 +39,6 @@ function initForm() {
             utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@19.5.6/build/js/utils.js"
         });
         console.log('✅ Máscara de telefone inicializada');
-    } else {
-        console.warn('⚠️ intl-tel-input não carregado');
     }
     
     phoneInput = phoneInputElement;
@@ -66,10 +50,11 @@ function initForm() {
     // Pega referências atualizadas
     const currentForm = document.getElementById('pleymusForm');
     const currentNameInput = document.getElementById('nameInput');
+    const currentEmailInput = document.getElementById('emailInput');
     const currentPhoneInput = document.getElementById('phoneInput');
     const currentButton = document.getElementById('submitButton');
     
-    // Reinicializa intl-tel-input no novo elemento
+    // Reinicializa intl-tel-input
     if (typeof intlTelInput !== 'undefined') {
         iti = intlTelInput(currentPhoneInput, {
             initialCountry: "br",
@@ -87,58 +72,55 @@ function initForm() {
     // Adiciona listener
     currentForm.addEventListener('submit', function(event) {
         console.log('📨 Submit detectado!');
-        
-        // PREVINE comportamento padrão
         event.preventDefault();
         event.stopPropagation();
         event.stopImmediatePropagation();
-        
-        // Processa o envio
-        handleSubmit(currentNameInput, currentPhoneInput, currentButton, currentForm);
-        
+        handleSubmit(currentNameInput, currentEmailInput, currentPhoneInput, currentButton, currentForm);
         return false;
     }, { capture: true });
     
     console.log('✅ Listener adicionado');
 }
 
-function handleSubmit(nameInput, phoneInputElement, button, form) {
+function handleSubmit(nameInput, emailInput, phoneInputElement, button, form) {
     console.log('🔄 Processando envio...');
     
     const name = nameInput.value.trim();
+    const email = emailInput.value.trim();
     const phone = phoneInputElement.value.trim();
     
     // Validação do nome
     if (!name || name.length < 3) {
-        console.log('❌ Nome inválido');
         showMessage('Por favor, insira seu nome completo', 'error', form);
+        return;
+    }
+    
+    // Validação do email
+    if (!email || !isValidEmail(email)) {
+        showMessage('Por favor, insira um email válido', 'error', form);
         return;
     }
     
     // Validação do telefone
     if (!phone) {
-        console.log('❌ Telefone vazio');
         showMessage('Por favor, insira seu telefone', 'error', form);
         return;
     }
     
-    
-    // Valida com intl-tel-input se disponível
     if (iti && !iti.isValidNumber()) {
-        console.log('❌ Telefone inválido');
         showMessage('Por favor, insira um telefone válido', 'error', form);
         return;
     }
     
-    // Pega o telefone completo com código do país
     const fullPhone = iti ? iti.getNumber() : phone;
     const countryData = iti ? iti.getSelectedCountryData() : null;
     
-    console.log('✅ Dados válidos:', { name, phone: fullPhone });
+    console.log('✅ Dados válidos:', { name, email, phone: fullPhone });
     
     // Loading state
     button.disabled = true;
     nameInput.disabled = true;
+    emailInput.disabled = true;
     phoneInputElement.disabled = true;
     const originalText = button.textContent;
     button.textContent = 'Enviando...';
@@ -146,9 +128,9 @@ function handleSubmit(nameInput, phoneInputElement, button, form) {
     // Verifica CONFIG
     if (typeof CONFIG === 'undefined' || !CONFIG.webhookURL) {
         console.error('❌ CONFIG não definido');
-        saveLocally({ name, phone: fullPhone });
+        saveLocally({ name, email, phone: fullPhone });
         showMessage('Dados salvos! Entraremos em contato.', 'success', form);
-        resetForm(nameInput, phoneInputElement, button, originalText);
+        resetForm(nameInput, emailInput, phoneInputElement, button, originalText);
         return;
     }
     
@@ -157,6 +139,7 @@ function handleSubmit(nameInput, phoneInputElement, button, form) {
     // Prepara dados
     const formData = new FormData();
     formData.append('name', name);
+    formData.append('email', email);
     formData.append('phone', fullPhone);
     formData.append('country', countryData ? countryData.name : 'Unknown');
     formData.append('countryCode', countryData ? countryData.iso2.toUpperCase() : 'XX');
@@ -169,18 +152,16 @@ function handleSubmit(nameInput, phoneInputElement, button, form) {
     fetch(CONFIG.webhookURL, {
         method: 'POST',
         body: formData,
-        headers: {
-            'Accept': 'application/json'
-        },
+        headers: { 'Accept': 'application/json' },
         mode: 'cors'
     })
     .then(function(response) {
-        console.log('📬 Resposta recebida:', response.status);
-        
+        console.log('📬 Resposta:', response.status);
         if (response.ok || response.status === 200) {
             console.log('✅ Sucesso!');
             showMessage('Dados enviados com sucesso! 🎉', 'success', form);
             nameInput.value = '';
+            emailInput.value = '';
             phoneInputElement.value = '';
             if (iti) iti.setNumber('');
         } else {
@@ -189,67 +170,52 @@ function handleSubmit(nameInput, phoneInputElement, button, form) {
     })
     .catch(function(error) {
         console.log('⚠️ Erro:', error.message);
-        // Salva localmente como fallback
-        saveLocally({ name, phone: fullPhone });
+        saveLocally({ name, email, phone: fullPhone });
         showMessage('Dados salvos! Entraremos em contato.', 'success', form);
         nameInput.value = '';
+        emailInput.value = '';
         phoneInputElement.value = '';
         if (iti) iti.setNumber('');
     })
     .finally(function() {
-        resetForm(nameInput, phoneInputElement, button, originalText);
+        resetForm(nameInput, emailInput, phoneInputElement, button, originalText);
     });
 }
 
-function resetForm(nameInput, phoneInput, button, originalText) {
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function resetForm(nameInput, emailInput, phoneInput, button, originalText) {
     button.disabled = false;
     nameInput.disabled = false;
+    emailInput.disabled = false;
     phoneInput.disabled = false;
     button.textContent = originalText;
 }
 
 function showMessage(message, type, form) {
-    console.log('💬 Mostrando mensagem:', message);
-    
-    // Remove mensagem anterior
+    console.log('💬 Mensagem:', message);
     const existing = document.querySelector('.form-message');
-    if (existing) {
-        existing.remove();
-    }
+    if (existing) existing.remove();
     
-    // Cria mensagem
     const div = document.createElement('div');
     div.className = 'form-message form-message-' + type;
     div.textContent = message;
     div.style.opacity = '0';
     
-    // Insere
     form.parentElement.insertBefore(div, form.nextSibling);
-    
-    // Anima entrada
-    setTimeout(function() {
-        div.style.opacity = '1';
-    }, 10);
-    
-    // Remove após 5s
+    setTimeout(function() { div.style.opacity = '1'; }, 10);
     setTimeout(function() {
         div.style.opacity = '0';
-        setTimeout(function() {
-            if (div.parentNode) {
-                div.remove();
-            }
-        }, 300);
+        setTimeout(function() { if (div.parentNode) div.remove(); }, 300);
     }, 5000);
 }
 
 function saveLocally(data) {
     try {
         const contacts = JSON.parse(localStorage.getItem('pleymus_contacts') || '[]');
-        contacts.push({
-            ...data,
-            timestamp: new Date().toISOString(),
-            page: window.location.href
-        });
+        contacts.push({ ...data, timestamp: new Date().toISOString(), page: window.location.href });
         localStorage.setItem('pleymus_contacts', JSON.stringify(contacts));
         console.log('💾 Dados salvos localmente');
     } catch (e) {
