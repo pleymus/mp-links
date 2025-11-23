@@ -23,6 +23,7 @@
     
     <!-- CSS -->
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@19.5.6/build/css/intlTelInput.css">
 </head>
 <body>
     <div id="root">
@@ -108,15 +109,22 @@
                 <h2>Conteúdo para Mentes Ilimitadas</h2>
                 <p>Aqui, você aprende a dominar o jogo das vendas, elevar os gatilhos certos e se tornar o profissional que o mercado não consegue ignorar.</p>
                 
-                <form id="pleymusForm" class="pleymus-input-wrapper">
+                <form id="pleymusForm" class="pleymus-form">
                     <input 
-                        type="email" 
-                        id="emailInput"
+                        type="text" 
+                        id="nameInput"
                         class="pleymus-input" 
-                        placeholder="Digite seu email"
+                        placeholder="Seu nome completo"
                         required
-                        autocomplete="email">
-                    <button type="submit" id="submitButton" class="pleymus-submit">→</button>
+                        autocomplete="name">
+                    <input 
+                        type="tel" 
+                        id="phoneInput"
+                        class="pleymus-input" 
+                        placeholder="Seu telefone"
+                        required
+                        autocomplete="tel">
+                    <button type="submit" id="submitButton" class="pleymus-submit">Enviar →</button>
                 </form>
             </div>
         </main>
@@ -145,6 +153,7 @@
     </div>
 
     <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@19.5.6/build/js/intlTelInput.min.js"></script>
     <script src="js/config.js"></script>
     <script src="js/slider.js"></script>
     <script src="js/form.js"></script>

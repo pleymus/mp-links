@@ -1,5 +1,8 @@
-// Form Handler - Versão GitHub Pages
+// Form Handler - Nome e Telefone com máscara internacional
 console.log('📧 Form.js carregado');
+
+let phoneInput;
+let iti;
 
 // Aguarda DOM carregar
 if (document.readyState === 'loading') {
@@ -12,7 +15,8 @@ function initForm() {
     console.log('🚀 Inicializando formulário...');
     
     const form = document.getElementById('pleymusForm');
-    const input = document.getElementById('emailInput');
+    const nameInput = document.getElementById('nameInput');
+    const phoneInputElement = document.getElementById('phoneInput');
     const button = document.getElementById('submitButton');
     
     if (!form) {
@@ -20,8 +24,13 @@ function initForm() {
         return;
     }
     
-    if (!input) {
-        console.error('❌ Input não encontrado');
+    if (!nameInput) {
+        console.error('❌ Input de nome não encontrado');
+        return;
+    }
+    
+    if (!phoneInputElement) {
+        console.error('❌ Input de telefone não encontrado');
         return;
     }
     
@@ -32,14 +41,48 @@ function initForm() {
     
     console.log('✅ Elementos encontrados');
     
+    // Inicializa intl-tel-input
+    if (typeof intlTelInput !== 'undefined') {
+        iti = intlTelInput(phoneInputElement, {
+            initialCountry: "br",
+            preferredCountries: ["br", "us", "pt", "es"],
+            separateDialCode: true,
+            autoPlaceholder: "aggressive",
+            formatOnDisplay: true,
+            nationalMode: false,
+            utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@19.5.6/build/js/utils.js"
+        });
+        console.log('✅ Máscara de telefone inicializada');
+    } else {
+        console.warn('⚠️ intl-tel-input não carregado');
+    }
+    
+    phoneInput = phoneInputElement;
+    
     // Remove qualquer listener anterior
     const newForm = form.cloneNode(true);
     form.parentNode.replaceChild(newForm, form);
     
     // Pega referências atualizadas
     const currentForm = document.getElementById('pleymusForm');
-    const currentInput = document.getElementById('emailInput');
+    const currentNameInput = document.getElementById('nameInput');
+    const currentPhoneInput = document.getElementById('phoneInput');
     const currentButton = document.getElementById('submitButton');
+    
+    // Reinicializa intl-tel-input no novo elemento
+    if (typeof intlTelInput !== 'undefined') {
+        iti = intlTelInput(currentPhoneInput, {
+            initialCountry: "br",
+            preferredCountries: ["br", "us", "pt", "es"],
+            separateDialCode: true,
+            autoPlaceholder: "aggressive",
+            formatOnDisplay: true,
+            nationalMode: false,
+            utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@19.5.6/build/js/utils.js"
+        });
+    }
+    
+    phoneInput = currentPhoneInput;
     
     // Adiciona listener
     currentForm.addEventListener('submit', function(event) {
@@ -51,7 +94,7 @@ function initForm() {
         event.stopImmediatePropagation();
         
         // Processa o envio
-        handleSubmit(currentInput, currentButton, currentForm);
+        handleSubmit(currentNameInput, currentPhoneInput, currentButton, currentForm);
         
         return false;
     }, { capture: true });
@@ -59,32 +102,52 @@ function initForm() {
     console.log('✅ Listener adicionado');
 }
 
-function handleSubmit(input, button, form) {
+function handleSubmit(nameInput, phoneInputElement, button, form) {
     console.log('🔄 Processando envio...');
     
-    const email = input.value.trim();
+    const name = nameInput.value.trim();
+    const phone = phoneInputElement.value.trim();
     
-    // Validação
-    if (!email || !isValidEmail(email)) {
-        console.log('❌ Email inválido');
-        showMessage('Por favor, insira um email válido', 'error', form);
+    // Validação do nome
+    if (!name || name.length < 3) {
+        console.log('❌ Nome inválido');
+        showMessage('Por favor, insira seu nome completo', 'error', form);
         return;
     }
     
-    console.log('✅ Email válido:', email);
+    // Validação do telefone
+    if (!phone) {
+        console.log('❌ Telefone vazio');
+        showMessage('Por favor, insira seu telefone', 'error', form);
+        return;
+    }
+    
+    // Valida com intl-tel-input se disponível
+    if (iti && !iti.isValidNumber()) {
+        console.log('❌ Telefone inválido');
+        showMessage('Por favor, insira um telefone válido', 'error', form);
+        return;
+    }
+    
+    // Pega o telefone completo com código do país
+    const fullPhone = iti ? iti.getNumber() : phone;
+    const countryData = iti ? iti.getSelectedCountryData() : null;
+    
+    console.log('✅ Dados válidos:', { name, phone: fullPhone });
     
     // Loading state
     button.disabled = true;
-    input.disabled = true;
+    nameInput.disabled = true;
+    phoneInputElement.disabled = true;
     const originalText = button.textContent;
-    button.textContent = '...';
+    button.textContent = 'Enviando...';
     
     // Verifica CONFIG
     if (typeof CONFIG === 'undefined' || !CONFIG.webhookURL) {
         console.error('❌ CONFIG não definido');
-        saveLocally(email);
-        showMessage('Email salvo! Entraremos em contato.', 'success', form);
-        resetForm(input, button, originalText);
+        saveLocally({ name, phone: fullPhone });
+        showMessage('Dados salvos! Entraremos em contato.', 'success', form);
+        resetForm(nameInput, phoneInputElement, button, originalText);
         return;
     }
     
@@ -92,7 +155,10 @@ function handleSubmit(input, button, form) {
     
     // Prepara dados
     const formData = new FormData();
-    formData.append('email', email);
+    formData.append('name', name);
+    formData.append('phone', fullPhone);
+    formData.append('country', countryData ? countryData.name : 'Unknown');
+    formData.append('countryCode', countryData ? countryData.iso2.toUpperCase() : 'XX');
     formData.append('timestamp', new Date().toISOString());
     formData.append('page', window.location.href);
     formData.append('source', CONFIG.additionalData?.source || 'pleymus');
@@ -112,8 +178,10 @@ function handleSubmit(input, button, form) {
         
         if (response.ok || response.status === 200) {
             console.log('✅ Sucesso!');
-            showMessage('Email cadastrado com sucesso! 🎉', 'success', form);
-            input.value = '';
+            showMessage('Dados enviados com sucesso! 🎉', 'success', form);
+            nameInput.value = '';
+            phoneInputElement.value = '';
+            if (iti) iti.setNumber('');
         } else {
             throw new Error('Status: ' + response.status);
         }
@@ -121,22 +189,21 @@ function handleSubmit(input, button, form) {
     .catch(function(error) {
         console.log('⚠️ Erro:', error.message);
         // Salva localmente como fallback
-        saveLocally(email);
-        showMessage('Email salvo! Entraremos em contato.', 'success', form);
-        input.value = '';
+        saveLocally({ name, phone: fullPhone });
+        showMessage('Dados salvos! Entraremos em contato.', 'success', form);
+        nameInput.value = '';
+        phoneInputElement.value = '';
+        if (iti) iti.setNumber('');
     })
     .finally(function() {
-        resetForm(input, button, originalText);
+        resetForm(nameInput, phoneInputElement, button, originalText);
     });
 }
 
-function isValidEmail(email) {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function resetForm(input, button, originalText) {
+function resetForm(nameInput, phoneInput, button, originalText) {
     button.disabled = false;
-    input.disabled = false;
+    nameInput.disabled = false;
+    phoneInput.disabled = false;
     button.textContent = originalText;
 }
 
@@ -174,16 +241,16 @@ function showMessage(message, type, form) {
     }, 5000);
 }
 
-function saveLocally(email) {
+function saveLocally(data) {
     try {
-        const emails = JSON.parse(localStorage.getItem('pleymus_emails') || '[]');
-        emails.push({
-            email: email,
+        const contacts = JSON.parse(localStorage.getItem('pleymus_contacts') || '[]');
+        contacts.push({
+            ...data,
             timestamp: new Date().toISOString(),
             page: window.location.href
         });
-        localStorage.setItem('pleymus_emails', JSON.stringify(emails));
-        console.log('💾 Email salvo localmente');
+        localStorage.setItem('pleymus_contacts', JSON.stringify(contacts));
+        console.log('💾 Dados salvos localmente');
     } catch (e) {
         console.error('Erro ao salvar:', e);
     }

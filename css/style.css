@@ -224,6 +224,13 @@ body {
     margin-bottom: 25px;
 }
 
+.pleymus-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-width: 500px;
+}
+
 .pleymus-input-wrapper {
     display: flex;
     gap: 10px;
@@ -254,6 +261,8 @@ body {
     font-weight: 600;
     cursor: pointer;
     transition: transform 0.2s;
+    width: 100%;
+    font-size: 16px;
 }
 
 .pleymus-submit:hover:not(:disabled) {
@@ -431,4 +440,23 @@ body {
     .footer-disclaimer {
         text-align: -webkit-match-parent;
     }
+}
+
+/* International Phone Input */
+.iti {
+    width: 100%;
+}
+
+.iti__flag-container {
+    padding: 0;
+}
+
+.iti__selected-flag {
+    padding: 0 8px 0 12px;
+}
+
+.iti__country-list {
+    max-height: 200px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
