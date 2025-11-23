@@ -26,3 +26,4 @@ const CONFIG = {
         campaign: 'renan-sakata',
     }
 };
+

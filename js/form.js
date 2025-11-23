@@ -122,6 +122,7 @@ function handleSubmit(nameInput, phoneInputElement, button, form) {
         return;
     }
     
+    
     // Valida com intl-tel-input se disponível
     if (iti && !iti.isValidNumber()) {
         console.log('❌ Telefone inválido');
