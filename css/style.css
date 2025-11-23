@@ -228,7 +228,6 @@ body {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    max-width: 500px;
 }
 
 .pleymus-input-wrapper {
