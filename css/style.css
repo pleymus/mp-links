@@ -445,6 +445,7 @@ body {
 /* International Phone Input */
 .iti {
     width: 100%;
+    display: block;
 }
 
 .iti__flag-container {
@@ -459,4 +460,13 @@ body {
     max-height: 200px;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Garante que o input de telefone tenha o mesmo width */
+#phoneInput {
+    width: 100%;
+}
+
+.iti input {
+    width: 100%;
 }
