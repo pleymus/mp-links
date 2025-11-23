@@ -23,7 +23,7 @@ const CONFIG = {
     // Dados adicionais que serão enviados junto com o email
     additionalData: {
         source: 'pleymus-landing-page',
-        campaign: 'renan-sakata',
+        campaign: 'marcio-paulino',
     }
 };
 
