@@ -1,0 +1,6 @@
+Adicione aqui o favicon do projeto:
+
+- favicon.ico (16x16 ou 32x32)
+- Pode ser gerado em sites como: https://favicon.io/
+
+Enquanto não adicionar, o navegador usará o favicon padrão.
