@@ -114,8 +114,7 @@
     function validateOrigin() {
         const allowedOrigins = [
             'github.io',
-            'localhost',
-            '127.0.0.1'
+            'https://links.marciopaulino.com/'
         ];
         
         const currentOrigin = window.location.hostname;
